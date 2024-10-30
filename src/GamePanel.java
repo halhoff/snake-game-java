@@ -1,10 +1,12 @@
 import javax.swing.*;
 import java.util.Random;
+import java.util.Queue;
+import java.util.LinkedList;
+import java.util.Set;
 import java.awt.*;
 import java.awt.event.*;
 
 public class GamePanel extends JPanel implements ActionListener {
-
     static final int SCREEN_WIDTH = 1000;
     static final int SCREEN_HEIGHT = 950;
     static final int UNIT_SIZE = 50;
@@ -17,10 +19,12 @@ public class GamePanel extends JPanel implements ActionListener {
     int highestEaten;
     int appleX;
     int appleY;
-    char direction = 'R';
+    char direction;
+    Queue<Character> directionQueue = new LinkedList<>();
+    boolean firstPlay = true;
     boolean running = false;
     boolean waiting = true;
-    Timer timer;
+    Timer gameTimer;
     Random random;
 
     GamePanel() {
@@ -33,11 +37,12 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     public void initialize() {
+        direction = 'R';
         applesEaten = 0;
         bodyParts = 4;
         x[0] = UNIT_SIZE * 7;
         y[0] = (SCREEN_HEIGHT / 2) / UNIT_SIZE * UNIT_SIZE + UNIT_SIZE;
-        for (int i = 1; i < bodyParts; i++) {
+        for (int i = 1; i < bodyParts; ++i) {
             x[i] = x[0] - i * UNIT_SIZE;
             y[i] = y[0];
         }
@@ -49,8 +54,9 @@ public class GamePanel extends JPanel implements ActionListener {
     public void startGame() {
         waiting = false;
         running = true;
-        timer = new Timer(DELAY, this);
-        timer.start();
+        firstPlay = false;
+        gameTimer = new Timer(DELAY, this);
+        gameTimer.start();
     }
 
     public void paintComponent(Graphics g) {
@@ -62,17 +68,18 @@ public class GamePanel extends JPanel implements ActionListener {
         drawGame(g);
         g.setColor(Color.red);
         g.fillRect(appleX, appleY, UNIT_SIZE, UNIT_SIZE);
-        if (running || waiting) {
+        if (running || firstPlay) {
             g.setColor(Color.red);
             g.setFont(new Font("Consolas", Font.BOLD, 40));
-            g.drawString("Score: " + applesEaten + " Highest: " + highestEaten, UNIT_SIZE, g.getFont().getSize());
+            g.drawString("Score: " + applesEaten + " Highest: "
+                         + highestEaten, UNIT_SIZE, g.getFont().getSize());
         }
         else {
             gameOver(g);
         }
     }
 
-    private void drawGame(Graphics g) {
+    public void drawGame(Graphics g) {
         for (int i = 1; i < SCREEN_WIDTH / UNIT_SIZE + 1; ++i) {
             for (int j = 1; j < SCREEN_HEIGHT / UNIT_SIZE + 1; ++j) {
                 if ((i + j) % 2 == 0) {
@@ -107,17 +114,18 @@ public class GamePanel extends JPanel implements ActionListener {
         if (x[0] < UNIT_SIZE) {
             running = false;
         }
-        if (x[0] >= SCREEN_WIDTH - UNIT_SIZE) {
+        if (x[0] > SCREEN_WIDTH) {
             running = false;
         }
         if (y[0] < UNIT_SIZE){
             running = false;
         }
-        if (y[0] >= SCREEN_HEIGHT - UNIT_SIZE) {
+        if (y[0] > SCREEN_HEIGHT) {
             running = false;
         }
         if (!running) {
-            timer.stop();
+            waiting = true;
+            gameTimer.stop();
         }
     }
 
@@ -142,6 +150,14 @@ public class GamePanel extends JPanel implements ActionListener {
             x[i] = x[i - 1];
             y[i] = y[i - 1];
         }
+        if (!directionQueue.isEmpty()) {
+            char newDirection = directionQueue.poll();
+            if ((direction == 'U' && newDirection != 'D') ||
+                (direction == 'D' && newDirection != 'U') ||
+                (direction == 'L' && newDirection != 'R') ||
+                (direction == 'R' && newDirection != 'L'))
+                direction = newDirection;
+        }
         switch(direction) {
             case 'U':
                 y[0] = y[0] - UNIT_SIZE;
@@ -162,24 +178,33 @@ public class GamePanel extends JPanel implements ActionListener {
         if ((x[0] == appleX) && (y[0] == appleY)) {
             ++bodyParts;
             ++applesEaten;
+            if (applesEaten > highestEaten) {
+                highestEaten = applesEaten;
+            }
             newApple();
         }
     }
 
     public void gameOver(Graphics g) {
-        if (applesEaten > highestEaten) {
-            highestEaten = applesEaten;
-        }
+        directionQueue.clear();
         g.setColor(Color.red);
-        g.setFont(new Font("Consolas", Font.BOLD, 40));
+        Font statFont = new Font("Consolas", Font.BOLD, 40);
+        Font bigFont = new Font("Consolas", Font.BOLD, 75);
+        Font smallFont = new Font("Consolas", Font.BOLD, 20);
+        FontMetrics bigMetrics = getFontMetrics(bigFont);
+        FontMetrics smallMetrics = getFontMetrics(smallFont);
+        g.setFont(statFont);
         g.drawString("Score: " + applesEaten + " Highest: " + highestEaten, UNIT_SIZE, g.getFont().getSize());
         g.setColor(Color.red);
-        g.setFont(new Font("Consolas", Font.BOLD, 75));
-        FontMetrics metrics2 = getFontMetrics(g.getFont());
-        g.drawString("Game Over", (SCREEN_WIDTH - metrics2.stringWidth("Game Over")) / 2 + UNIT_SIZE, SCREEN_HEIGHT/2);
+        g.setFont(bigFont);
+        g.drawString("Game Over", (SCREEN_WIDTH - bigMetrics.stringWidth("Game Over"))
+                     / 2 + UNIT_SIZE, SCREEN_HEIGHT / 2);
+        g.setFont(smallFont);
+        g.drawString("press ENTER to restart", (SCREEN_WIDTH - smallMetrics.stringWidth("press ENTER to restart"))
+                     / 2 + UNIT_SIZE, SCREEN_HEIGHT / 2 + UNIT_SIZE);
     }
-    @Override
-    public void actionPerformed(ActionEvent e) {
+
+    @Override public void actionPerformed(ActionEvent e) {
         if (running) {
             move();
             checkApple();
@@ -189,33 +214,26 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     public class MyKeyAdapter extends KeyAdapter {
-        @Override
-        public void keyPressed(KeyEvent e) {
-            if (waiting) {
+        @Override public void keyPressed(KeyEvent e) {
+            final Set<Integer> startKeyCodes = Set.of(
+                KeyEvent.VK_RIGHT,
+                KeyEvent.VK_UP,
+                KeyEvent.VK_DOWN
+            );
+            if (waiting && startKeyCodes.contains(e.getKeyCode())) {
+                waiting = false;
                 startGame();
                 initialize();
             }
-            switch(e.getKeyCode()) {
-                case KeyEvent.VK_LEFT:
-                    if (direction != 'R') {
-                        direction = 'L';
-                    }
-                    break;
-                case KeyEvent.VK_RIGHT:
-                    if (direction != 'L') {
-                        direction = 'R';
-                    }
-                    break;
-                case KeyEvent.VK_UP:
-                    if(direction != 'D') {
-                        direction = 'U';
-                    }
-                    break;
-                case KeyEvent.VK_DOWN:
-                    if(direction != 'U') {
-                        direction = 'D';
-                    }
-                    break;
+            char newDirection = direction;
+            switch (e.getKeyCode()) {
+                case KeyEvent.VK_LEFT -> newDirection = 'L';
+                case KeyEvent.VK_RIGHT -> newDirection = 'R';
+                case KeyEvent.VK_UP -> newDirection = 'U';
+                case KeyEvent.VK_DOWN -> newDirection = 'D';
+            }
+            if (directionQueue.size() < 3) {
+                directionQueue.offer(newDirection);
             }
         }
     }
