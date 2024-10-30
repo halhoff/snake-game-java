@@ -24,6 +24,7 @@ public class GamePanel extends JPanel implements ActionListener {
     boolean firstPlay = true;
     boolean running = false;
     boolean waiting = true;
+    boolean gameOverToggle = false;
     Timer gameTimer;
     Random random;
 
@@ -38,6 +39,7 @@ public class GamePanel extends JPanel implements ActionListener {
 
     public void initialize() {
         direction = 'R';
+        directionQueue.clear();
         applesEaten = 0;
         bodyParts = 4;
         x[0] = UNIT_SIZE * 7;
@@ -74,7 +76,7 @@ public class GamePanel extends JPanel implements ActionListener {
             g.drawString("Score: " + applesEaten + " Highest: "
                          + highestEaten, UNIT_SIZE, g.getFont().getSize());
         }
-        else {
+        if (gameOverToggle) {
             gameOver(g);
         }
     }
@@ -125,6 +127,7 @@ public class GamePanel extends JPanel implements ActionListener {
         }
         if (!running) {
             waiting = true;
+            gameOverToggle = true;
             gameTimer.stop();
         }
     }
@@ -186,7 +189,6 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     public void gameOver(Graphics g) {
-        directionQueue.clear();
         g.setColor(Color.red);
         Font statFont = new Font("Consolas", Font.BOLD, 40);
         Font bigFont = new Font("Consolas", Font.BOLD, 75);
@@ -220,7 +222,12 @@ public class GamePanel extends JPanel implements ActionListener {
                 KeyEvent.VK_UP,
                 KeyEvent.VK_DOWN
             );
-            if (waiting && startKeyCodes.contains(e.getKeyCode())) {
+            if (!running && !firstPlay && e.getKeyCode() == KeyEvent.VK_ENTER) {
+                waiting = true;
+                gameOverToggle = false;
+                initialize();
+            }
+            if (!running && !gameOverToggle && waiting && startKeyCodes.contains(e.getKeyCode())) {
                 waiting = false;
                 startGame();
                 initialize();
