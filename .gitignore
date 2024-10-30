@@ -1,0 +1,8 @@
+# Default ignored files
+/shelf/
+/.idea/workspace.xml
+
+out/
+.DS_Store
+snake-game.iml
+.idea/
