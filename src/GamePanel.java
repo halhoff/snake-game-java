@@ -70,12 +70,10 @@ public class GamePanel extends JPanel implements ActionListener {
         drawGame(g);
         g.setColor(Color.red);
         g.fillRect(appleX, appleY, UNIT_SIZE, UNIT_SIZE);
-        if (running || firstPlay) {
-            g.setColor(Color.red);
-            g.setFont(new Font("Consolas", Font.BOLD, 40));
-            g.drawString("Score: " + applesEaten + " Highest: "
-                         + highestEaten, UNIT_SIZE, g.getFont().getSize());
-        }
+        g.setColor(Color.red);
+        g.setFont(new Font("Consolas", Font.BOLD, 40));
+        g.drawString("Score: " + applesEaten + " Highest: "
+                     + highestEaten, UNIT_SIZE, g.getFont().getSize());
         if (gameOverToggle) {
             gameOver(g);
         }
