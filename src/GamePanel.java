@@ -11,7 +11,7 @@ public class GamePanel extends JPanel implements ActionListener {
     static final int SCREEN_HEIGHT = 950;
     static final int UNIT_SIZE = 50;
     static final int GAME_UNITS = (SCREEN_WIDTH * SCREEN_HEIGHT) / (UNIT_SIZE * UNIT_SIZE);
-    static final int DELAY = 50;
+    static final int DELAY = 75;
     final int[] x = new int[GAME_UNITS];
     final int[] y = new int[GAME_UNITS];
     int bodyParts = 4;
@@ -21,10 +21,14 @@ public class GamePanel extends JPanel implements ActionListener {
     int appleY;
     char direction;
     Queue<Character> directionQueue = new LinkedList<>();
+
     boolean firstPlay = true;
     boolean running = false;
     boolean waiting = true;
     boolean gameOverToggle = false;
+    boolean pause = false;
+
+    PauseScreen pauseScreen;
     Timer gameTimer;
     Random random;
 
@@ -34,6 +38,9 @@ public class GamePanel extends JPanel implements ActionListener {
         this.setBackground(new Color(87, 138, 52));
         this.setFocusable(true);
         this.addKeyListener(new MyKeyAdapter());
+        pauseScreen = new PauseScreen();
+        pauseScreen.setVisible(false);
+        this.add(pauseScreen);
         initialize();
     }
 
@@ -73,7 +80,7 @@ public class GamePanel extends JPanel implements ActionListener {
         g.setColor(Color.red);
         g.setFont(new Font("Consolas", Font.BOLD, 40));
         g.drawString("Score: " + applesEaten + " Highest: "
-                     + highestEaten, UNIT_SIZE, g.getFont().getSize());
+                + highestEaten, UNIT_SIZE, g.getFont().getSize());
         if (gameOverToggle) {
             gameOver(g);
         }
@@ -154,9 +161,9 @@ public class GamePanel extends JPanel implements ActionListener {
         if (!directionQueue.isEmpty()) {
             char newDirection = directionQueue.poll();
             if ((direction == 'U' && newDirection != 'D') ||
-                (direction == 'D' && newDirection != 'U') ||
-                (direction == 'L' && newDirection != 'R') ||
-                (direction == 'R' && newDirection != 'L'))
+                    (direction == 'D' && newDirection != 'U') ||
+                    (direction == 'L' && newDirection != 'R') ||
+                    (direction == 'R' && newDirection != 'L'))
                 direction = newDirection;
         }
         switch(direction) {
@@ -198,10 +205,10 @@ public class GamePanel extends JPanel implements ActionListener {
         g.setColor(Color.red);
         g.setFont(bigFont);
         g.drawString("Game Over", (SCREEN_WIDTH - bigMetrics.stringWidth("Game Over"))
-                     / 2 + UNIT_SIZE, SCREEN_HEIGHT / 2);
+                / 2 + UNIT_SIZE, SCREEN_HEIGHT / 2);
         g.setFont(smallFont);
         g.drawString("press ENTER to restart", (SCREEN_WIDTH - smallMetrics.stringWidth("press ENTER to restart"))
-                     / 2 + UNIT_SIZE, SCREEN_HEIGHT / 2 + UNIT_SIZE);
+                / 2 + UNIT_SIZE, SCREEN_HEIGHT / 2 + UNIT_SIZE);
     }
 
     @Override public void actionPerformed(ActionEvent e) {
@@ -215,17 +222,27 @@ public class GamePanel extends JPanel implements ActionListener {
 
     public class MyKeyAdapter extends KeyAdapter {
         @Override public void keyPressed(KeyEvent e) {
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                pause = !pause;
+                pauseScreen.setVisible(pause);
+                if (!firstPlay) {
+                    if (pause) gameTimer.stop();
+                    else gameTimer.start();
+                    directionQueue.clear();
+                }
+            }
+
             final Set<Integer> startKeyCodes = Set.of(
-                KeyEvent.VK_RIGHT,
-                KeyEvent.VK_UP,
-                KeyEvent.VK_DOWN
+                    KeyEvent.VK_RIGHT,
+                    KeyEvent.VK_UP,
+                    KeyEvent.VK_DOWN
             );
             if (!running && !firstPlay && e.getKeyCode() == KeyEvent.VK_ENTER) {
                 waiting = true;
                 gameOverToggle = false;
                 initialize();
             }
-            if (!running && !gameOverToggle && waiting && startKeyCodes.contains(e.getKeyCode())) {
+            if (!running && !gameOverToggle && waiting && !pause && startKeyCodes.contains(e.getKeyCode())) {
                 waiting = false;
                 startGame();
                 initialize();
