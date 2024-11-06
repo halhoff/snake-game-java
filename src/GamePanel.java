@@ -41,6 +41,7 @@ public class GamePanel extends JPanel implements ActionListener {
         pauseScreen = new PauseScreen();
         pauseScreen.setVisible(false);
         this.add(pauseScreen);
+        gameTimer = new Timer(DELAY, this);
         initialize();
     }
 
@@ -64,7 +65,6 @@ public class GamePanel extends JPanel implements ActionListener {
         waiting = false;
         running = true;
         firstPlay = false;
-        gameTimer = new Timer(DELAY, this);
         gameTimer.start();
     }
 
@@ -222,7 +222,7 @@ public class GamePanel extends JPanel implements ActionListener {
 
     public class MyKeyAdapter extends KeyAdapter {
         @Override public void keyPressed(KeyEvent e) {
-            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            if (!gameOverToggle && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
                 pause = !pause;
                 pauseScreen.setVisible(pause);
                 if (!firstPlay) {
