@@ -7,7 +7,7 @@ public class PauseScreen extends JPanel {
         setLayout(new GridBagLayout());
         JLabel pauseLabel = new JLabel("Paused");
         pauseLabel.setForeground(Color.WHITE);
-        pauseLabel.setFont(new Font("Arial", Font.BOLD, 40));
+        pauseLabel.setFont(new Font("Montserrat", Font.PLAIN, 40));
         add(pauseLabel);
     }
 }

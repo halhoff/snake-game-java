@@ -78,7 +78,7 @@ public class GamePanel extends JPanel implements ActionListener {
         g.setColor(Color.red);
         g.fillRect(appleX, appleY, UNIT_SIZE, UNIT_SIZE);
         g.setColor(Color.red);
-        g.setFont(new Font("Consolas", Font.BOLD, 40));
+        g.setFont(new Font("Montserrat", Font.BOLD, 40));
         g.drawString("Score: " + applesEaten + " Highest: "
                 + highestEaten, UNIT_SIZE, g.getFont().getSize());
         if (gameOverToggle) {
@@ -154,32 +154,44 @@ public class GamePanel extends JPanel implements ActionListener {
 
     public void move() {
         if (!running) return;
+        if (!directionQueue.isEmpty()) {
+            char newDirection = directionQueue.poll();
+            if ((direction == 'U' && newDirection != 'D') ||
+                (direction == 'D' && newDirection != 'U') ||
+                (direction == 'L' && newDirection != 'R') ||
+                (direction == 'R' && newDirection != 'L'))
+                direction = newDirection;
+        }
+        int newX = x[0], newY = y[0];
+        switch (direction) {
+            case 'U':
+                if (y[0] == UNIT_SIZE) { running = false; }
+                else { newY = y[0] - UNIT_SIZE; }
+                break;
+            case 'D':
+                if (y[0] == SCREEN_HEIGHT) { running = false; }
+                else { newY = y[0] + UNIT_SIZE; }
+                break;
+            case 'L':
+                if (x[0] == UNIT_SIZE) { running = false; }
+                else { newX = x[0] - UNIT_SIZE; }
+                break;
+            case 'R':
+                if (x[0] == SCREEN_WIDTH) { running = false; }
+                else { newX = x[0] + UNIT_SIZE; }
+                break;
+        }
+        if (!running) {
+            checkCollisions();
+            return;
+        };
         for (int i = bodyParts; i > 0; --i) {
             x[i] = x[i - 1];
             y[i] = y[i - 1];
         }
-        if (!directionQueue.isEmpty()) {
-            char newDirection = directionQueue.poll();
-            if ((direction == 'U' && newDirection != 'D') ||
-                    (direction == 'D' && newDirection != 'U') ||
-                    (direction == 'L' && newDirection != 'R') ||
-                    (direction == 'R' && newDirection != 'L'))
-                direction = newDirection;
-        }
-        switch(direction) {
-            case 'U':
-                y[0] = y[0] - UNIT_SIZE;
-                break;
-            case 'D':
-                y[0] = y[0] + UNIT_SIZE;
-                break;
-            case 'L':
-                x[0] = x[0] - UNIT_SIZE;
-                break;
-            case 'R':
-                x[0] = x[0] + UNIT_SIZE;
-                break;
-        }
+        x[0] = newX;
+        y[0] = newY;
+        checkCollisions();
     }
 
     public void checkApple() {
@@ -195,9 +207,9 @@ public class GamePanel extends JPanel implements ActionListener {
 
     public void gameOver(Graphics g) {
         g.setColor(Color.red);
-        Font statFont = new Font("Consolas", Font.BOLD, 40);
-        Font bigFont = new Font("Consolas", Font.BOLD, 75);
-        Font smallFont = new Font("Consolas", Font.BOLD, 20);
+        Font statFont = new Font("Montserrat", Font.BOLD, 40);
+        Font bigFont = new Font("Montserrat", Font.BOLD, 75);
+        Font smallFont = new Font("Montserrat", Font.BOLD, 20);
         FontMetrics bigMetrics = getFontMetrics(bigFont);
         FontMetrics smallMetrics = getFontMetrics(smallFont);
         g.setFont(statFont);
@@ -215,7 +227,6 @@ public class GamePanel extends JPanel implements ActionListener {
         if (running) {
             move();
             checkApple();
-            checkCollisions();
         }
         repaint();
     }
